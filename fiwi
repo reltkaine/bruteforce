@@ -1,7 +1,7 @@
 import network
 import time
 
-SSID_TARGET = "PLDTHOMEFIBRacNDs"
+SSID_TARGET = "PLDTHOMEFIBRTacNDs"
 PASSWORDS = ["paawordwifi1", "password23"]
 # Set up the onboard LED (GPIO2 for ESP8266)
 led = machine.Pin(2, machine.Pin.OUT)
